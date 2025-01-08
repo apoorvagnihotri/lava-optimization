@@ -1,0 +1,40 @@
+// INTEL CORPORATION CONFIDENTIAL AND PROPRIETARY
+
+// Notice: This computer software was prepared by Battelle Memorial Institute,
+// hereinafter the Contractor, under Contract No. DE-AC05-76RL01830 with the
+// Department of Energy (DOE).  All rights in the computer software are reserved
+// by DOE on behalf of the United States Government and the Contractor as
+// provided in the Contract.  You are authorized to use this computer software
+// for Governmental purposes but it is not to be released or distributed to the
+// public.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY WARRANTY,
+// EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.
+// This notice including this sentence must appear on any copies of this
+// computer software.
+
+// Describes how the thread is started and stopped
+.RmwCA=1
+.RmwDA=0
+.RdcDA=1
+.StrideCA=1
+.StrideDA=1
+.StrideSA=1
+.StridePA=0
+
+.constant:spikeheight
+
+.var:da@t0ls        // DendAccum input
+.var:payload@t0ls   // Spike payload
+.var:abs_v@s0ls     // Local variable abs_v
+
+.mem:CA[0] {
+    ls v; ls bias; ws;
+}
+
+:pass0
+add v da                       // v += self.a_in.recv()
+add v bias                     // v += bias
+abs abs_v v                    // abs_v = |v|
+cmp_skp_lt 3 abs_v spikeheight // if abs_v >= spikeheight:
+mov payload v                  //     payload = v
+mov v 0                        //     v = 0
+spike 0                        //     self.s_out.send(payload)
