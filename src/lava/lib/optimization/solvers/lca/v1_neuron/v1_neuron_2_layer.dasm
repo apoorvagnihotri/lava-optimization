@@ -1,0 +1,56 @@
+// INTEL CORPORATION CONFIDENTIAL AND PROPRIETARY
+
+// Notice: This computer software was prepared by Battelle Memorial Institute,
+// hereinafter the Contractor, under Contract No. DE-AC05-76RL01830 with the 
+// Department of Energy (DOE).  All rights in the computer software are reserved
+// by DOE on behalf of the United States Government and the Contractor as 
+// provided in the Contract.  You are authorized to use this computer software
+// for Governmental purposes but it is not to be released or distributed to the
+// public.  NEITHER THE GOVERNMENT NOR THE CONTRACTOR MAKES ANY WARRANTY,
+// EXPRESS OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.
+// This notice including this sentence must appear on any copies of this 
+// computer software.
+
+// Describes how the thread is started and stopped
+.RmwCA=1
+.RmwDA=0
+.RdcDA=1
+.StrideCA=1
+.StrideDA=1
+.StrideSA=1
+.StridePA=0
+
+.constant:dv   // dv = 1 - tau
+.constant:tau  // time constant
+.constant:vth  // threshold
+.constant:interval_sub_1  // should be power of 2 minus 1
+
+.var:da@t0ls        // DendAccum input
+.var:payload@t0ls   // Spike payload
+.var:abs_v@s0ls     // Local variable abs_v
+.var:time@t7bs      // Current time
+
+.mem:CA[0] {
+    ls v; ls; ws;
+}
+
+:pass0 // these can be anything
+abs abs_v v            // abs_v = |v|
+sub abs_v vth          // abs_v -= vth
+max abs_v 0            // abs_v = max(abs_v, 0)
+cmp_skp_ge 1 v 0       // if v < 0:
+neg abs_v abs_v        //     abs_v = -abs_v #abs_v is now the activation
+mul_rn 24 v dv         // v *= dv
+add_sat v da           // v += self.a_in.recv()
+rmw_ca 0
+next
+
+:pass1
+mov payload abs_v       // payload = abs_v
+mul_rn 24 abs_v tau     // abs_v *= tau
+add_sat v abs_v         // v += abs_v
+and time interval_sub_1 // time = time & interval_sub_1
+cmp_skp_ne 1 time 1     // if time == 1:
+mov v 0                 //     v = 0
+cmp_skp_eq 1 payload 0  // if payload != 0:
+spike 0                 //     self.s_out.send(payload)

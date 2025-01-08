@@ -20,8 +20,9 @@ class V1Neuron(AbstractProcess):
     tau: time constant
     bias: bias applied every timestep for 1 layer dynamics
     two_layer: If false, use 1 layer dynamics, otherwise use 2 layer dynamics
+    reset_interval: Interval at which neuron is reset, must be a power of 2
+    between [2-256]. Set to 1 to never reset (default).
     """
-
     def __init__(self,
                  vth: float,
                  tau: float,
@@ -29,7 +30,9 @@ class V1Neuron(AbstractProcess):
                  shape: ty.Optional[tuple] = (1,),
                  bias: ty.Optional[ty.Union[int, np.ndarray]] = 0,
                  two_layer: ty.Optional[bool] = True,
+                 reset_interval: ty.Optional[int] = 1,
                  **kwargs) -> None:
+
         super().__init__(shape=shape,
                          vth=vth,
                          tau=tau,
@@ -44,3 +47,4 @@ class V1Neuron(AbstractProcess):
         self.s_out = OutPort(shape=shape)
         self.v = Var(shape=shape)
         self.bias = Var(shape=shape, init=bias)
+        self.reset_interval = Var(shape=(1,), init=reset_interval)
